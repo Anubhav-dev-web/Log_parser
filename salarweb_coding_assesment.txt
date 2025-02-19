@@ -1,0 +1,154 @@
+/*I have built this project using node.jd, express, chart.js, install the node modules package using npm i, and the run this command to start the project : "node server.js"
+at localhost:3000 we will see the graph that is the frontend and at log-data all the asked data, I have also printed data on console also. 
+
+I downloaded the log file in my local machine which was named as server.log and was in log folder
+
+ folder structure for this project
+
+ log-analyzer/
+│── public/
+│   ├── index.html      (Frontend UI)
+│   ├── script.js       (Fetch & render charts)
+│   
+│── logs/
+│   ├── server.log      (Your log file)
+│── server.js           (Node.js backend)
+│── package.json        (Project dependencies)
+
+
+** Thankyou for giving me this opportunity to show my skills, I'm really excited to here back from you and hopefully work with you .
+
+*/
+
+//The backend code starts form here -server.js
+
+const express = require('express');
+const fs = require('fs');
+
+const app = express();
+app.use(express.static('public')); // Serve frontend files
+
+const logRegex =
+  /(?<ip>\S+) - - \[(?<timestamp>\d{2}\/\w{3}\/\d{4}:(?<hour>\d{2}):\d{2}:\d{2})/;
+
+function parseLogFile(filePath) {
+  if (!fs.existsSync(filePath)) {
+    console.log('Log file not found:', filePath);
+    return { ipCounter: {}, hourlyTraffic: {} };
+  }
+
+  const logData = fs.readFileSync(filePath, 'utf-8');
+  const lines = logData.split('\n');
+
+  let ipCounter = {};
+  let hourlyTraffic = {};
+
+  for (let line of lines) {
+    const match = line.match(logRegex);
+    if (match) {
+      const ip = match.groups.ip;
+      const hour = match.groups.hour;
+
+      ipCounter[ip] = (ipCounter[ip] || 0) + 1;
+      hourlyTraffic[hour] = (hourlyTraffic[hour] || 0) + 1;
+    }
+  }
+
+  return { ipCounter, hourlyTraffic };
+}
+
+// Function to get contributors
+function getTopContributors(data, percentage) {
+  const total = Object.values(data).reduce((sum, val) => sum + val, 0); // Total traffic
+  const threshold = total * (percentage / 100); // Percentage threshold
+
+  // Sort in descending order
+  const sortedEntries = Object.entries(data).sort((a, b) => b[1] - a[1]);
+
+  let cumulative = 0;
+  let topContributors = [];
+
+  for (let [key, count] of sortedEntries) {
+    cumulative += count;
+    topContributors.push({ key, count });
+    if (cumulative >= threshold) break; // Stop when we reach threshold
+  }
+
+  return topContributors;
+}
+
+// API Route
+app.get('/log-data', (req, res) => {
+  const logFilePath = 'logs/server.log'; // Ensure correct path
+  const { ipCounter, hourlyTraffic } = parseLogFile(logFilePath);
+
+  // Calculate Top 85% IPs
+  const topIPs = getTopContributors(ipCounter, 85);
+  // Calculate Top 70% Hours
+  const topHours = getTopContributors(hourlyTraffic, 70);
+  console.log('\n IP Addresses and Occurrences (Full Data):');
+  console.log(ipCounter);
+
+  console.log('\n Hourly Traffic (Full Data):');
+  console.log(hourlyTraffic);
+
+  console.log('\n Top 85% IPs contributing to traffic:');
+  console.log(topIPs);
+
+  console.log('\n Top 70% Hours contributing to traffic:');
+  console.log(topHours);
+  res.json({ ipCounter, hourlyTraffic, topIPs, topHours });
+});
+
+
+app.listen(3000, () => console.log('Server running at http://localhost:3000'));
+
+
+//For graph the code starts from here --------------------------------------
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Log Analyzer Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  </head>
+  <body>
+    <h2>IP Address Histogram</h2>
+    <canvas id="ipChart"></canvas>
+
+    <h2>Hourly Traffic Histogram</h2>
+    <canvas id="hourChart"></canvas>
+
+    <script src="script.js"></script>
+  </body>
+</html>
+
+//Below is the script file for graph code 
+
+fetch('/log-data')
+  .then((res) => res.json())
+  .then((data) => {
+    const ipLabels = Object.keys(data.ipCounter);
+
+    const ipCounts = Object.values(data.ipCounter);
+    const hourLabels = Object.keys(data.hourlyTraffic);
+    const hourCounts = Object.values(data.hourlyTraffic);
+
+    new Chart(document.getElementById('ipChart'), {
+      type: 'bar',
+      data: {
+        labels: ipLabels,
+        datasets: [{ label: 'IP Occurrences', data: ipCounts }],
+      },
+    });
+
+    new Chart(document.getElementById('hourChart'), {
+      type: 'bar',
+      data: {
+        labels: hourLabels,
+        datasets: [{ label: 'Hourly Traffic', data: hourCounts }],
+      },
+    });
+  });
