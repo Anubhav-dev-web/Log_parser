@@ -11,7 +11,7 @@ yarn-error.log*
 
 # Environment variables
 .env
-salarweb_coding_assesment.txt
+salarweb_coding_assesment.txt 
 
 # OS and Editor-specific files
 .DS_Store
