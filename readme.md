@@ -51,11 +51,6 @@ node server.js
 
 4. The web page will display a list of top traffic contributors based on configurable percentage thresholds
 
-## Configuration
-
-The application is configured using the `config.json` file.
-
-
 
 ## Contributing
 

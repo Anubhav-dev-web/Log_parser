@@ -11,6 +11,7 @@ yarn-error.log*
 
 # Environment variables
 .env
+.txt
 
 # OS and Editor-specific files
 .DS_Store
